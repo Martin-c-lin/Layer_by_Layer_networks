@@ -152,7 +152,14 @@ def add_conv_layer(old_network,new_layer_output_size=32,number_of_outputs=1):
               optimizer=optimizers.RMSprop(lr=1e-4),
               metrics=['acc'])
     return new_network
-def add_dense_layer(old_network,new_layer_size=32):
+def dense_mnist_LBL(dense_layers_sizes,epochs):
+    """
+
+    """
+    network=models.Sequential()
+    
+    return network
+def add_dense_layer_mnist(old_network,new_layer_size=32):
     from keras import models, layers
     # Function for adding a new dense layer to a network and freezing previously existing weights
     # Input: Network to be grown

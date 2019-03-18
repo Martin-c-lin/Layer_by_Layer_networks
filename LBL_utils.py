@@ -152,35 +152,111 @@ def add_conv_layer(old_network,new_layer_output_size=32,number_of_outputs=1):
               optimizer=optimizers.RMSprop(lr=1e-4),
               metrics=['acc'])
     return new_network
-def dense_mnist_LBL(dense_layers_sizes,epochs):
+def get_mnist_data_flattened(type=0):
     """
+    Returns mnist
+    """
+    import numpy as np
+    from keras.datasets import mnist
+    from keras.utils import to_categorical
+    # Load data
+    (train_images, train_labels), (test_images,test_labels) = mnist.load_data()
+    s1=np.shape(train_images)
+    s2=np.shape(test_images)
 
+    # Reformat input & labels
+    train_images = train_images.reshape((s1[0], s1[1]*s1[2] ))
+    train_images = train_images.astype('float32')/255
+
+    test_images=test_images.reshape((s2[0], s2[1]*s2[2] ))
+    test_images = test_images.astype('float32')/255
+
+    print('Successfully reformated the images')
+
+    train_labels = to_categorical(train_labels)
+    test_labels = to_categorical(test_labels)
+    return train_images,train_labels,test_images,test_labels
+def dense_mnist_LBL(nbr_of_layers=50,epochs=5,results_path="",save_models=False,models_path=""):
     """
-    network=models.Sequential()
-    
+    Function for generating
+    """
+    from keras import models,layers
+    import numpy as np
+    train_images,train_labels,test_images,test_labels = get_mnist_data_flattened()
+
+    network_a = models.Sequential()
+    network_a.add(layers.Dense(512,activation='relu',input_shape=(28 * 28,)))
+    network_a.add(layers.Dense(10,activation='softmax'))
+    network_a.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
+
+     #nbr of internal layers
+    results = []
+    network_a.summary()
+    network_a.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+
+    for i in range(nbr_of_layers):
+        if(i%2==0):
+            network_b=grow_network_mnist(network_a,32,10)
+            network_b.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
+            network_b.summary()
+            network_b.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+            if(save_models):
+                model_name = "MNIST_LBL_layer"+str(i+2)+"trainedfor"+str(epochs)+"e.h5"
+                network_b.save(models_path+model_name)
+            results.append(network_b.evaluate(test_images,test_labels))
+            del(network_a)
+        else:
+            network_a=grow_network_mnist(network_b)
+            network_a.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
+            network_a.summary()
+            network_a.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+            if(save_models):
+                model_name = "MNIST_LBL_layer"+str(i+2)+"trainedfor"+str(epochs)+"e.h5"
+                network_a.save(models_path+model_name)
+            results.append(network_a.evaluate(test_images,test_labels))
+            del(network_b)
+            print('b')
+    if(i%2==1):
+        network = network_a
+    else:
+        network = network_b
+    result_name = 'MNIST_LBL_res_'+str(epochs)+'epochs_'+str(nbr_of_layers)+'layers'
+    np.save(results_path+result_name,results)
     return network
-def add_dense_layer_mnist(old_network,new_layer_size=32):
-    from keras import models, layers
-    # Function for adding a new dense layer to a network and freezing previously existing weights
-    # Input: Network to be grown
-    # Output: New network with one untrained layer (excluding output layer)
+def dense_mnist_normal(nbr_of_layers=50,epochs=5,results_path="",save_models=False,models_path=""):
+    """
+    Function which trains a set of networks the normal way as comparsion
+    """
+    from keras import models,layers
+    import numpy as np
+    train_images,train_labels,test_images,test_labels = get_mnist_data_flattened()
+
+    results = []
+    for m in range(nbr_of_layers):
+        network_traditional=models.Sequential()
+        network_traditional.add(layers.Dense(512,activation='relu',input_shape=(28 * 28,)))
+        for n in range(m):
+            network_traditional.add(layers.Dense(32,activation='relu'))#not supposed to be here
+        network_traditional.add(layers.Dense(10,activation='softmax'))
+        network_traditional.summary()
+        network_traditional.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
+        network_traditional.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+        if(save_models):
+            model_name = "MNIST_Normal_layer"+str(m+2)+"trainedfor"+str(epochs)+"e.h5"
+            network_traditional.save(models_path+model_name)
+    result_name = 'MNIST_normal_res_'+str(epochs)+'epochs_'+str(nbr_of_layers)+'layers'
+    np.save(results_path+result_name,results)
+    return network_traditional
+def grow_network_mnist(old_network,new_layer_size=32,output_size=10):
     new_network=models.Sequential()
     nbr_of_layers = len(old_network.layers)
     for i in range(nbr_of_layers-1):
         old_network.layers[i].trainable=False
         new_network.add(old_network.layers[i])
-    dense_layer_name = 'dense_' + str(nbr_of_layers)
-
-    dense_layer = layers.Dense(new_layer_size,activation='relu')
-    new_network.add(dense_layer)
-    # OUTPUT LAYER
-    number_of_outputs = 10
-    output_layer = layers.Dense(number_of_outputs,activation='softmax',name='output')
-    new_network.add(output_layer)
-    new_network.compile(loss='binary_crossentropy',
-              optimizer=optimizers.RMSprop(lr=1e-4),
-              metrics=['acc'])
+    new_network.add(layers.Dense(new_layer_size,activation='relu'))
+    new_network.add(layers.Dense(output_size,activation='softmax'))
     return new_network
+
 def get_partial_output(network,training_data,offset=2):
     """
     Function for getting all the outputs from early convolutional layers and putting

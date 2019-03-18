@@ -4,7 +4,7 @@ from keras import layers
 from keras.utils import to_categorical
 import numpy as np
 import matplotlib.pyplot as plt
-
+import LBL_utils as utils
 # Method for growing network
 def grow_network(old_network,new_layer_size=32,output_size=10):
     new_network=models.Sequential()
@@ -17,32 +17,13 @@ def grow_network(old_network,new_layer_size=32,output_size=10):
     #new_network.summary()
     return new_network
 
-# Load data
-(train_images, train_labels), (test_images,test_labels) = mnist.load_data()
-s1=np.shape(train_images)
-s2=np.shape(test_images)
-
-# Changed to layer by layer training
-
-# Reformat input & labels
-train_images=train_images.reshape((s1[0], s1[1]*s1[2] ))
-train_images = train_images.astype('float32')/255
-
-test_images=test_images.reshape((s2[0], s2[1]*s2[2] ))
-test_images = test_images.astype('float32')/255
-
-print('Successfully reformated the images')
-
-train_labels = to_categorical(train_labels)
-test_labels = to_categorical(test_labels)
+train_images,train_labels,test_images,test_labels=utils.get_mnist_data_flattened()
 
 print('Successfully converted labels. Initializing the training')
 
 network_a = models.Sequential()
 network_a.add(layers.Dense(512,activation='relu',input_shape=(28 * 28,)))
-#network.add(layers.Dense(32,activation='relu',trainable=False))#not supposed to be here
 network_a.add(layers.Dense(10,activation='softmax'))
-#network.layers[0].trainable=False # works just fine
 network_a.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
 
 nbr_of_layers=50 #nbr of internal layers
@@ -68,6 +49,7 @@ if(i%2==1):
     network = network_a
 else:
     network = network_b
+
 print('Creating and fitting replica of second network and using traditional training methods')
 network_traditional=models.Sequential()
 network_traditional.add(layers.Dense(512,activation='relu',input_shape=(28 * 28,)))

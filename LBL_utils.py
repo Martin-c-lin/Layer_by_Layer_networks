@@ -3,7 +3,6 @@ from keras import optimizers
 from keras.preprocessing.image import ImageDataGenerator
 
 import os,sys
-# Switch compiler?
 def get_normal_network_CD(conv_layers,dense_layers,input_shape=(150,150,3)):
     #Returns a compiled small network with conv layers and dense_layers
     from keras.models import Sequential
@@ -199,7 +198,7 @@ def dense_mnist_LBL(nbr_of_layers=50,epochs=5,results_path="",save_models=False,
             network_b=grow_network_mnist(network_a,32,10)
             network_b.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
             network_b.summary()
-            network_b.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+            network_b.fit(train_images, train_labels, epochs=epochs, batch_size=128,verbose=2 )
             if(save_models):
                 model_name = "MNIST_LBL_layer"+str(i+2)+"trainedfor"+str(epochs)+"e.h5"
                 network_b.save(models_path+model_name)
@@ -209,7 +208,7 @@ def dense_mnist_LBL(nbr_of_layers=50,epochs=5,results_path="",save_models=False,
             network_a=grow_network_mnist(network_b)
             network_a.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
             network_a.summary()
-            network_a.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+            network_a.fit(train_images, train_labels, epochs=epochs, batch_size=128,verbose=2)
             if(save_models):
                 model_name = "MNIST_LBL_layer"+str(i+2)+"trainedfor"+str(epochs)+"e.h5"
                 network_a.save(models_path+model_name)
@@ -240,7 +239,7 @@ def dense_mnist_normal(nbr_of_layers=50,epochs=5,results_path="",save_models=Fal
         network_traditional.add(layers.Dense(10,activation='softmax'))
         network_traditional.summary()
         network_traditional.compile(optimizer='rmsprop',loss='categorical_crossentropy',metrics=['accuracy'])
-        network_traditional.fit(train_images, train_labels, epochs=epochs, batch_size=128)
+        network_traditional.fit(train_images, train_labels, epochs=epochs, batch_size=128,verbose=2)
         if(save_models):
             model_name = "MNIST_Normal_layer"+str(m+2)+"trainedfor"+str(epochs)+"e.h5"
             network_traditional.save(models_path+model_name)
